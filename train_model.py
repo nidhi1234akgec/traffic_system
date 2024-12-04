@@ -7,13 +7,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load dataset (replace with your actual dataset)
-df = pd.read_csv('traffic_data.csv')
+df = pd.read_csv('trafficdata.csv')
 
 # Display the first few rows of the dataframe
 print(df.head())
 
 # Convert timestamp to datetime
 df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+
 
 # Extract useful features from timestamp
 df['hour'] = df['timestamp'].dt.hour
