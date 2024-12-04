@@ -1,48 +1,86 @@
 import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import LabelEncoder
-import pickle
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Load the dataset
-data = pd.read_csv('trafficdata.csv')
+# Load dataset (replace with your actual dataset)
+df = pd.read_csv('traffic_data.csv')
 
-# Preprocessing:
-# Convert 'DateTime' to datetime and extract features like hour of the day, day of the week, etc.
-data['DateTime'] = pd.to_datetime(data['DateTime'])
-data['hour'] = data['DateTime'].dt.hour
-data['day_of_week'] = data['DateTime'].dt.dayofweek  # 0: Monday, 6: Sunday
-data['month'] = data['DateTime'].dt.month  # To capture seasonal trends
+# Display the first few rows of the dataframe
+print(df.head())
 
-# We don't need the 'ID' column for training, so we can drop it.
-data.drop('ID', axis=1, inplace=True)
+# Convert timestamp to datetime
+df['timestamp'] = pd.to_datetime(df['timestamp'])
 
-# Encoding 'Junction' column (since it is categorical, we can use Label Encoding or One-Hot Encoding)
-# Here, I'll use Label Encoding for simplicity.
-label_encoder = LabelEncoder()
-data['Junction'] = label_encoder.fit_transform(data['Junction'])
+# Extract useful features from timestamp
+df['hour'] = df['timestamp'].dt.hour
+df['day_of_week'] = df['timestamp'].dt.dayofweek  # Monday = 0, Sunday = 6
 
-# Features (independent variables) and target (dependent variable)
-features = ['hour', 'day_of_week', 'month', 'Junction']
-target = 'Vehicles'
+# Handle categorical columns (if any)
+df = pd.get_dummies(df, columns=['weather_condition'], drop_first=True)
 
-X = data[features]  # Independent variables
-y = data[target]  # Target variable
+# Handle missing values (if any)
+df = df.dropna()  # Or use df.fillna() if appropriate
 
-# Split data into training and testing sets
+# Display the processed data
+print(df.head())
+
+# Define features (X) and target (y)
+X = df.drop(columns=['timestamp', 'traffic_volume'])
+y = df['traffic_volume']
+
+# Split into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Create and train the model
-model = LinearRegression()
+print(f"Training data size: {X_train.shape}")
+print(f"Test data size: {X_test.shape}")
+
+# Initialize the Random Forest Regressor
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+
+# Fit the model to the training data
 model.fit(X_train, y_train)
 
-# Make predictions
+# Predict on the test set
 y_pred = model.predict(X_test)
+
+
+
+
+
 
 # Evaluate the model
 mse = mean_squared_error(y_test, y_pred)
 print(f"Mean Squared Error: {mse}")
+
+# Plot predicted vs actual values
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, y_pred, color='blue')
+plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='red', lw=2)
+plt.xlabel('Actual Traffic Volume')
+plt.ylabel('Predicted Traffic Volume')
+plt.title('Random Forest Regression: Actual vs Predicted Traffic Volume')
+plt.show()
+
+from sklearn.model_selection import GridSearchCV
+
+# Hyperparameter tuning (example)
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [10, 20, 30, None],
+    'min_samples_split': [2, 5, 10],
+}
+
+grid_search = GridSearchCV(estimator=RandomForestRegressor(), param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)
+grid_search.fit(X_train, y_train)
+
+# Best parameters found by GridSearchCV
+print("Best Parameters:", grid_search.best_params_)
+
+
 
 # Save the trained model to a file (traffic_model.pkl)
 with open('traffic_model.pkl', 'wb') as f:
