@@ -13,16 +13,90 @@ df = pd.read_csv('trafficdata.csv')
 print(df.head())
 
 # Convert timestamp to datetime
-df['timestamp'] = pd.to_datetime(df['timestamp'])
+df['DateTime'] = pd.to_datetime(df['DateTime'])
+
+#  Deleting the ID column
+df=df.drop(["ID"], axis=1)
 
 
 
 # Extract useful features from timestamp
-df['hour'] = df['timestamp'].dt.hour
-df['day_of_week'] = df['timestamp'].dt.dayofweek  # Monday = 0, Sunday = 6
+df['hour'] = df['DateTime'].dt.hour
+df['day_of_week'] = df['DateTime'].dt.dayofweek  # Monday = 0, Sunday = 6
+df["Date_no"] = df["DateTime"].dt.day
 
-# Handle categorical columns (if any)
-df = pd.get_dummies(df, columns=['weather_condition'], drop_first=True)
+
+# Pivoting Dateset from junctions
+df_junction = df.pivot(columns = "Junction", index="DateTime")
+
+
+# Creating new datasets 
+df_1 = df_junction[[('Vehicles', 1)]]  
+df_2 = df_junction[[('Vehicles', 2)]]  
+df_3 = df_junction[[('Vehicles', 3)]]  
+df_4 = df_junction[[('Vehicles', 4)]]  
+df_4 = df_4.dropna() #For only a few months, Junction 4 has only had minimal data.  
+  
+
+# As DFS's data frame contains many indices, its index is lowering level one.  
+list_dfs = [df_1, df_2, df_3, df_4]  
+for i in list_dfs:  
+    i.columns= i.columns.droplevel(level=1)  
+
+
+
+# Normalize Function  
+def Normalize(dataframe,column):  
+    average = dataframe[column].mean()  
+    stdev = dataframe[column].std()  
+    df_normalized = (dataframe[column] - average) / stdev  
+    df_normalized = df_normalized.to_frame()  
+    return df_normalized, average, stdev  
+  
+# Differencing Function  
+def Difference(dataframe,column, interval):  
+    diff = []  
+    for i in range(interval, len(dataframe)):  
+        value = dataframe[column][i] - dataframe[column][i - interval]  
+        diff.append(value)  
+    return diff  
+
+
+
+
+# In order to make the series stationary, normalize and differ  
+df_N1, avg_J1, std_J1 = Normalize(df_1, "Vehicles")  
+Diff_1 = Difference(df_N1, column="Vehicles", interval=(24*7)) #taking a week's difference  
+df_N1 = df_N1[24*7:]  
+df_N1.columns = ["Norm"]  
+df_N1["Diff"]= Diff_1  
+  
+df_N2, avg_J2, std_J2 = Normalize(df_2, "Vehicles")  
+Diff_2 = Difference(df_N2, column="Vehicles", interval=(24)) #taking a day's difference  
+df_N2 = df_N2[24:]  
+df_N2.columns = ["Norm"]  
+df_N2["Diff"]= Diff_2  
+  
+df_N3, avg_J3, std_J3 = Normalize(df_3, "Vehicles")  
+Diff_3 = Difference(df_N3, column="Vehicles", interval=1) #taking an hour's difference  
+df_N3 = df_N3[1:]  
+df_N3.columns = ["Norm"]  
+df_N3["Diff"]= Diff_3  
+  
+df_N4, avg_J4, std_J4 = Normalize(df_4, "Vehicles")  
+Diff_4 = Difference(df_N4, column="Vehicles", interval=1) #taking an hour's difference  
+df_N4 = df_N4[1:]  
+df_N4.columns = ["Norm"]  
+df_N4["Diff"]= Diff_4  
+
+
+
+
+
+
+
+
+
 
 # Handle missing values (if any)
 df = df.dropna()  # Or use df.fillna() if appropriate
@@ -31,8 +105,8 @@ df = df.dropna()  # Or use df.fillna() if appropriate
 print(df.head())
 
 # Define features (X) and target (y)
-X = df.drop(columns=['timestamp', 'traffic_volume'])
-y = df['traffic_volume']
+X = df.drop(columns=["DateTime", 'Vehicles'])
+y = df['Vehicles']
 
 # Split into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
