@@ -6,13 +6,13 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load dataset (replace with your actual dataset)
+# Load dataset 
 df = pd.read_csv('trafficdata.csv')
 
 # Display the first few rows of the dataframe
 print(df.head())
 
-# Convert timestamp to datetime
+# Convert DateTime to datetime
 df['DateTime'] = pd.to_datetime(df['DateTime'])
 
 #  Deleting the ID column
@@ -89,15 +89,6 @@ df_N4 = df_N4[1:]
 df_N4.columns = ["Norm"]  
 df_N4["Diff"]= Diff_4  
 
-
-
-
-
-
-
-
-
-
 # Handle missing values (if any)
 df = df.dropna()  # Or use df.fillna() if appropriate
 
@@ -163,3 +154,4 @@ with open('traffic_model.pkl', 'wb') as f:
     pickle.dump(model, f)
 
 print("Model training complete. The model is saved as 'traffic_model.pkl'.")
+2
