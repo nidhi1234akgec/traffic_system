@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -18,6 +19,9 @@ df['DateTime'] = pd.to_datetime(df['DateTime'])
 #  Deleting the ID column
 df=df.drop(["ID"], axis=1)
 
+# Encoding weather column as it is categorical
+label_encoder = LabelEncoder()
+df["weather"] = label_encoder.fit_transform(df["weather"])
 
 
 # Extract useful features from timestamp
